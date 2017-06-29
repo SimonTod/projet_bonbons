@@ -25,7 +25,9 @@ con.connect(function(err) {
   console.log("connected");
   generageRandomCommands();
   initMachinesFabrication();
-  getCommands();
+  var intervalGetCommands = setInterval(function() {
+    getCommands();
+  }, 10000);
   var intervalRunFabrib = setInterval(function() {
     if (machinesFabricationInitialized === true && commandesAFabriquerInitialized === true) {
       var intervalRunFabrication = setInterval(function() {
