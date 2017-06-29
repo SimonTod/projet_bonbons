@@ -66,52 +66,55 @@ module.exports = {
 
     launchProduction(commande, con) {
       commande.changeState(1, con);
-      //vérifie si on a besoin de changer d'outils. Si oui, la machine prend le temps de changer d'outils
-      if (this.bonbon !== null && !(this.bonbon.bonbon === commande.bonbon && this.bonbon.variante === commande.variante)) {
-        this.state = 2;
-        console.log("machine " + this.id + " change d'outils");
-        setTimeout(function() {
-          this.state = 3;
-        }, getDelai(commande.variante) /*5000*/);
-      } else {
-        this.state = 3;
-      }
-
       var myThis = this;
 
-      var intervalCheckDelaiFinished = setInterval(function() {
-        if (myThis.state = 3) {
-          clearInterval(intervalCheckDelaiFinished);
-          myThis.state = 1;
-          console.log("machine " + myThis.id + " commence la production");
+      var sqlQuantiteCommande = "SELECT * FROM commandes WHERE id = " + commande.id + ";";
+      con.query(sqlQuantiteCommande, function(err, results) {
+        if (err) throw err;
+        if (results.length !== 0) {
+          var sqlGetContenant = "SELECT * FROM contenants WHERE id = " + results[0].contenant + ";";
+          con.query(sqlGetContenant, function(err1, results1) {
+            if (err1) throw err1;
+            var sqlGetStock = "SELECT * FROM stock_bonbons " +
+              "WHERE bonbon = " + commande.bonbon + " " +
+              "AND couleur = " + commande.couleur + " " +
+              "AND variante = " + commande.variante + " " +
+              "AND texture = " + commande.texture + ";";
+            con.query(sqlGetStock, function(err2, results2) {
+              if (err2) throw err2;
+              if (results2.length !== 0 && (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons)) {
+                commande.changeState(2, con);
+                myThis.state = 0;
+              } else {
+                //vérifie si on a besoin de changer d'outils. Si oui, la machine prend le temps de changer d'outils
+                if (myThis.bonbon !== null && !(myThis.bonbon.bonbon === commande.bonbon && myThis.bonbon.variante === commande.variante)) {
+                  myThis.state = 2;
+                  console.log("machine " + myThis.id + " change d'outils");
+                  setTimeout(function() {
+                    myThis.state = 3;
+                  }, getDelai(commande.variante) /*5000*/);
+                } else {
+                  myThis.state = 3;
+                }
 
-          setTimeout(function() {
-            myThis.addStock(commande, con, myThis.getCadence(commande.variante));
-            var sqlQuantiteCommande = "SELECT * FROM commandes WHERE id = " + commande.id + ";";
-            con.query(sqlQuantiteCommande, function(err, results) {
-              if (err) throw err;
-              var sqlGetContenant = "SELECT * FROM contenants WHERE id = " + results[0].contenant + ";";
-              con.query(sqlGetContenant, function(err1, results1) {
-                if (err1) throw err1;
-                var sqlGetStock = "SELECT * FROM stock_bonbons " +
-                  "WHERE bonbon = " + commande.bonbon + " " +
-                  "AND couleur = " + commande.couleur + " " +
-                  "AND variante = " + commande.variante + " " +
-                  "AND texture = " + commande.texture + ";";
-                con.query(sqlGetStock, function(err2, results2) {
-                  if (err2) throw err2;
-                  if (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons) {
-                    commande.changeState(2, con);
-                    myThis.state = 0;
-                  } else {
-                    myThis.launchProduction(commande, con);
+                var intervalCheckDelaiFinished = setInterval(function() {
+                  if (myThis.state = 3) {
+                    clearInterval(intervalCheckDelaiFinished);
+                    myThis.state = 1;
+                    console.log("machine " + myThis.id + " commence la production");
+
+                    setTimeout(function() {
+                      myThis.addStock(commande, con, myThis.getCadence(commande.variante));
+                      myThis.launchProduction(commande, con);
+                    }, 60 * 60 * 1000 /*5000*/);
                   }
-                });
-              });
+                }, 100)
+              }
             });
-          }, 60 * 60 * 1000 /*5000*/);
+          });
         }
-      }, 100)
+      });
+
     }
 
     getDelai(variante) {
@@ -156,32 +159,6 @@ module.exports = {
           return this.cadences[i];
         }
       }
-    }
-
-    checkQuantiteSuffisante(commande, con) {
-      var check = false;
-      var myThis = this;
-      var sqlQuantiteCommande = "SELECT * FROM commandes WHERE id = " + commande.id + ";";
-      con.query(sqlQuantiteCommande, function(err, results) {
-        if (err) throw err;
-        var sqlGetContenant = "SELECT * FROM contenants WHERE id = " + results[0].contenant + ";";
-        con.query(sqlGetContenant, function(err1, results1) {
-          if (err1) throw err1;
-          var sqlGetStock = "SELECT * FROM stock_bonbons " +
-            "WHERE bonbon = " + commande.bonbon + " " +
-            "AND couleur = " + commande.couleur + " " +
-            "AND variante = " + commande.variante + " " +
-            "AND texture = " + commande.texture + ";";
-          con.query(sqlGetStock, function(err2, results2) {
-            if (err2) throw err2;
-            // if (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons)
-            //   check = true;
-            myThis.checkQuantiteSuffisanteFinished = true;
-            console.log("check = " + (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons));
-            return (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons);
-          });
-        });
-      });
     }
   },
 
