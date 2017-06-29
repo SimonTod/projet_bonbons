@@ -12,7 +12,8 @@ module.exports = {
      - 3 : en cours de conditionnement
      - 4 : pret à l'envoi
      */
-    constructor(bonbon, couleur, variante, texture, contenant, quantite, pays, etat) {
+    constructor(bonbon, couleur, variante, texture, contenant, quantite, pays, id, etat) {
+      this.id = id;
       this.bonbon = bonbon;
       this.couleur = couleur;
       this.variante = variante;
@@ -22,6 +23,14 @@ module.exports = {
       this.pays = pays;
       this.etat = etat;
     }
+
+    changeState(newState, con) {
+      this.etat = newState;
+      var sql = "UPDATE commandes SET etat = "+this.etat+" WHERE id = " + this.id + ";";
+      con.query(sql, function(err, results) {
+        if (err) throw err;
+      });
+    }
   },
 
   MachineFabric: class {
@@ -30,6 +39,7 @@ module.exports = {
     - 0 : à l'arret
     - 1 : en marche
     - 2 : changement d'outil
+    - 3 : outil changé / machine prete
      */
     constructor(id, variantes, cadences, delaiChangeOutils, state, bonbon) {
       this.id = id;
@@ -40,8 +50,147 @@ module.exports = {
       this.bonbon = bonbon;
     }
 
+    checkIsFree() {
+      if (this.state === 0)
+        return true;
+    }
 
+    checkHasVariante(variante) {
+      var check = false;
+      this.variantes.forEach(function(thisVariante) {
+        if (thisVariante === variante)
+          check = true;
+      });
+      return check;
+    }
+
+    launchProduction(commande, con) {
+      commande.changeState(1, con);
+      //vérifie si on a besoin de changer d'outils. Si oui, la machine prend le temps de changer d'outils
+      if (this.bonbon !== null && !(this.bonbon.bonbon === commande.bonbon && this.bonbon.variante === commande.variante)) {
+        this.state = 2;
+        console.log("machine " + this.id + " change d'outils");
+        setTimeout(function() {
+          this.state = 3;
+        }, getDelai(commande.variante) /*5000*/);
+      } else {
+        this.state = 3;
+      }
+
+      var myThis = this;
+
+      var intervalCheckDelaiFinished = setInterval(function() {
+        if (myThis.state = 3) {
+          clearInterval(intervalCheckDelaiFinished);
+          myThis.state = 1;
+          console.log("machine " + myThis.id + " commence la production");
+
+          setTimeout(function() {
+            myThis.addStock(commande, con, myThis.getCadence(commande.variante));
+            var sqlQuantiteCommande = "SELECT * FROM commandes WHERE id = " + commande.id + ";";
+            con.query(sqlQuantiteCommande, function(err, results) {
+              if (err) throw err;
+              var sqlGetContenant = "SELECT * FROM contenants WHERE id = " + results[0].contenant + ";";
+              con.query(sqlGetContenant, function(err1, results1) {
+                if (err1) throw err1;
+                var sqlGetStock = "SELECT * FROM stock_bonbons " +
+                  "WHERE bonbon = " + commande.bonbon + " " +
+                  "AND couleur = " + commande.couleur + " " +
+                  "AND variante = " + commande.variante + " " +
+                  "AND texture = " + commande.texture + ";";
+                con.query(sqlGetStock, function(err2, results2) {
+                  if (err2) throw err2;
+                  if (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons) {
+                    commande.changeState(2, con);
+                    myThis.state = 0;
+                  } else {
+                    myThis.launchProduction(commande, con);
+                  }
+                });
+              });
+            });
+          }, 60 * 60 * 1000 /*5000*/);
+        }
+      }, 100)
+    }
+
+    getDelai(variante) {
+      var index;
+      for (var i = 0; i < this.variantes.length; i++) {
+        if (this.variantes[i] === variante)
+          index = i;
+      }
+      var delai = this.delaiChangeOutils[index];
+      return delai * 60 * 1000;
+    }
+
+    addStock(commande, con, quantite) {
+      var checkStock = "SELECT * FROM stock_bonbons " +
+        "WHERE bonbon = " + commande.bonbon + " " +
+        "AND couleur = " + commande.couleur + " " +
+        "AND variante = " + commande.variante + " " +
+        "AND texture = " + commande.texture + ";";
+      con.query(checkStock, function(err, results) {
+        if (err) throw err;
+        if (results.length > 0) {
+          var newQuantite = results[0].quantite + quantite;
+          var addToExistingStock = "UPDATE stock_bonbons SET quantite = " + newQuantite + " WHERE id = " + results[0].id + ";";
+          con.query(addToExistingStock, function(err1, results1) {
+            if (err1) throw err1;
+            console.log("Stock de " + commande.bonbon+"/"+commande.couleur+"/"+commande.variante+"/"+commande.texture + " modifié de " + results[0].quantite + " à " + newQuantite);
+          })
+        } else {
+          var createStock = "INSERT INTO stock_bonbons(bonbon, couleur, variante, texture, quantite)" +
+            "VALUES(" + commande.bonbon + ", " + commande.couleur + ", " + commande.variante + ", " + commande.texture + ", " + quantite + ");";
+          con.query(createStock, function(err1, results1) {
+            if (err1) throw err1;
+            console.log("Nouveau stock de " + commande.bonbon+"/"+commande.couleur+"/"+commande.variante+"/"+commande.texture + " créé avec " + quantite + " de quantité")
+          })
+        }
+      });
+    }
+
+    getCadence(variante) {
+      for(var i = 0; i < this.variantes.length; i++) {
+        if (this.variantes[i] === variante) {
+          return this.cadences[i];
+        }
+      }
+    }
+
+    checkQuantiteSuffisante(commande, con) {
+      var check = false;
+      var myThis = this;
+      var sqlQuantiteCommande = "SELECT * FROM commandes WHERE id = " + commande.id + ";";
+      con.query(sqlQuantiteCommande, function(err, results) {
+        if (err) throw err;
+        var sqlGetContenant = "SELECT * FROM contenants WHERE id = " + results[0].contenant + ";";
+        con.query(sqlGetContenant, function(err1, results1) {
+          if (err1) throw err1;
+          var sqlGetStock = "SELECT * FROM stock_bonbons " +
+            "WHERE bonbon = " + commande.bonbon + " " +
+            "AND couleur = " + commande.couleur + " " +
+            "AND variante = " + commande.variante + " " +
+            "AND texture = " + commande.texture + ";";
+          con.query(sqlGetStock, function(err2, results2) {
+            if (err2) throw err2;
+            // if (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons)
+            //   check = true;
+            myThis.checkQuantiteSuffisanteFinished = true;
+            console.log("check = " + (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons));
+            return (results2[0].quantite >= results[0].quantite * results1[0].max_bonbons);
+          });
+        });
+      });
+    }
+  },
+
+  Bonbon: class {
+    constructor(bonbon, couleur, variante, texture) {
+      this.bonbon = bonbon;
+      this.couleur = couleur;
+      this.variante = variante;
+      this.texture = texture;
+    }
   }
-
-
 };

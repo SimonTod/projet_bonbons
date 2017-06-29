@@ -6,8 +6,12 @@ var mysql = require('mysql');
 var classes = require('./classes');
 
 var getDataFinished = false;
+
 var machinesFabrication = [];
 var machinesFabricationInitialized = false;
+
+var commandesAFabriquer = [];
+var commandesAFabriquerInitialized = false;
 
 var con = mysql.createConnection({
   host: "localhost",
@@ -21,9 +25,12 @@ con.connect(function(err) {
   console.log("connected");
   generageRandomCommands();
   initMachinesFabrication();
+  getCommands();
   var intervalRunFabrib = setInterval(function() {
-    if (machinesFabricationInitialized === true) {
-      runFabrication();
+    if (machinesFabricationInitialized === true && commandesAFabriquerInitialized === true) {
+      var intervalRunFabrication = setInterval(function() {
+        runFabrication();
+      }, 1000);
       clearInterval(intervalRunFabrib);
     }
   }, 100);
@@ -70,15 +77,42 @@ var initMachinesFabrication = function() {
 };
 
 var runFabrication = function() {
-
+  machinesFabrication.forEach(function(machine) {
+    if (machine.state === 0) {
+      commandesAFabriquer.forEach(function(commande) {
+        if (machine.checkIsFree() && machine.checkHasVariante(commande.variante) && commande.etat === 0) {
+          console.log("machine " + machine.id + " starts working on command " + commande.id);
+          machine.launchProduction(commande, con);
+        }
+      })
+    }
+  })
 };
 
 var getCommands = function() {
-  var sql = "SELECT * FROM commandes;";
+  commandesAFabriquerInitialized = false;
+  var sql = "SELECT * FROM commandes WHERE etat = 0;";
   con.query(sql, function(err, results) {
     if (err) throw err;
-
+    results.forEach(function(result) {
+      var commande;
+      if (!checkCommandeExists(commandesAFabriquer, result.id)) {
+        commande = new classes.Commande(result.bonbon, result.couleur, result.variante, result.texture, result.contenant, result.quantite, result.pays, result.id, result.etat)
+        commandesAFabriquer.push(commande);
+      }
+    });
+    commandesAFabriquerInitialized = true;
   });
+
+  var checkCommandeExists = function (commandes, commandeId) {
+    var check = false;
+    commandes.forEach(function(commande) {
+      if (commande.id == commandeId) {
+        check = true;
+      }
+    });
+    return check;
+  };
 };
 
 var generageRandomCommands = function () {
