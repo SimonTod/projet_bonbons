@@ -13,8 +13,16 @@ var machinesFabricationInitialized = false;
 var machinesConditionnement = [];
 var machinesConditionnementInitialized = false;
 
+var gares = [];
+var garesInitialized = false;
+
 var commandes = [];
 var commandesInitialized = false;
+
+var commandesGares = [];
+var commandesGaresInitialized = false;
+var commandesGaresFilled = false;
+var commandesGaresStatesChecked = false;
 
 var con = mysql.createConnection({
   host: "localhost",
@@ -29,8 +37,10 @@ con.connect(function(err) {
   generateRandomCommands();
   initMachinesFabrication();
   initMachinesConditionnement();
+  initGares();
   var intervalGetCommands = setInterval(function() {
     getCommands();
+    getCommandesGares();
   }, 10000);
   var intervalRun = setInterval(function() {
     if (machinesFabricationInitialized === true && commandesInitialized === true && machinesConditionnementInitialized === true) {
@@ -44,6 +54,14 @@ con.connect(function(err) {
       clearInterval(intervalRun);
     }
   }, 100);
+  var intervalRunGares = setInterval(function() {
+    if (commandesGaresStatesChecked === true && garesInitialized === true) {
+      var intervalRunGares2 = setInterval(function() {
+        runGares();
+      }, 1000);
+      clearInterval(intervalRunGares);
+    }
+  }, 100)
 });
 
 var initMachinesFabrication = function() {
@@ -111,6 +129,33 @@ var initMachinesConditionnement = function() {
   };
 };
 
+var initGares = function() {
+  var sql = "SELECT * FROM gares;";
+  con.query(sql, function(err, results) {
+    if (err) throw err;
+    results.forEach(function(result) {
+      var bonbon;
+      var gare;
+      if (!checkGareExists(gares, result.id)) {
+        bonbon = new classes.BonbonConditionnne(result.bonbon, result.couleur, result.variante, result.texture, result.contenant);
+        gare = new classes.Gare(result.id, result.gare, bonbon, result.quantite);
+        gares.push(gare);
+      }
+    });
+    garesInitialized = true;
+  });
+
+  var checkGareExists = function (gares, gareId) {
+    var check = false;
+    gares.forEach(function(gare) {
+      if (gare.id == gareId) {
+        check = true;
+      }
+    });
+    return check;
+  };
+};
+
 var runFabrication = function() {
   machinesFabrication.forEach(function(machine) {
     if (machine.state === 0) {
@@ -141,6 +186,14 @@ var runConditionnement = function() {
   });
 };
 
+var runGares = function() {
+  commandesGares.forEach(function(commandeGare) {
+    if (commandeGare.etat === 1) {
+      commandeGare.launchFill(gares, con);
+    }
+  });
+};
+
 var getCommands = function() {
   commandesInitialized = false;
   var sql = "SELECT * FROM commandes;";
@@ -167,8 +220,101 @@ var getCommands = function() {
   };
 };
 
+var getCommandesGares = function() {
+  commandesInitialized = false;
+  var sqlGetCommandesId = "SELECT * FROM commandes_id;";
+  con.query(sqlGetCommandesId, function(err, results) {
+    if (err) throw err;
+    results.forEach(function(result) {
+      if (!checkCommandeExists(commandesGares, result.id)) {
+        var commandeId = new classes.CommandeGares(result.id, result.pays, result.etat, []);
+        commandesGares.push(commandeId);
+      }
+    });
+    commandesGaresInitialized = true;
+    fillCommandesGares();
+  });
+
+  var checkCommandeExists = function (commandes, commandeId) {
+    var check = false;
+    commandes.forEach(function(commande) {
+      if (commande.id === commandeId) {
+        check = true;
+      }
+    });
+    return check;
+  };
+};
+
+var fillCommandesGares = function() {
+  var interval = setInterval(function() {
+    if (commandesGaresInitialized) {
+      clearInterval(interval);
+      commandesGares.forEach(function(commandeGare) {
+        var sql = "SELECT * FROM commandes WHERE commande_id = " + commandeGare.id + ";";
+        con.query(sql, function(err, results) {
+          if(err) throw err;
+          results.forEach(function(result) {
+            if (!checkCommandeExists(commandeGare.commandes, result.id)) {
+              var commande = new classes.Commande(result.bonbon, result.couleur, result.variante, result.texture, result.contenant, result.quantite, result.id, result.etat);
+              commandeGare.commandes.push(commande);
+            } else {
+              updateCommandeState(commandeGare.commandes, result.id, result.etat);
+            }
+          })
+        })
+      });
+      commandesGaresFilled = true;
+      checkComandesGaresStates();
+    }
+  }, 1000);
+
+  var checkCommandeExists = function(commandes, commandeId) {
+    var check = false;
+    commandes.forEach(function(commande) {
+      if (commande.id === commandeId) {
+        check = true;
+      }
+    });
+    return check;
+  };
+
+  var updateCommandeState = function(commandes, commandeId, newState) {
+    commandes.forEach(function(commande) {
+      if (commande.id === commandeId) {
+        commande.etat = newState;
+      }
+    });
+  }
+};
+
+var checkComandesGaresStates = function() {
+  commandesGares.forEach(function(commandeGare) {
+    var count = 0;
+    var count2 = 0;
+    var count3 = commandeGare.commandes.length;
+    var checkCount2 = false;
+    for (var i = 0; i < commandeGare.commandes.length; i++) {
+      if (commandeGare.commandes[i].etat === 4 || commandeGare.commandes[i].etat === 5) {
+        count++;
+      }
+      count2++;
+      if (count2 === count3)
+        checkCount2 = true;
+    }
+    var interval = setInterval(function() {
+      if (checkCount2) {
+        clearInterval(interval);
+        if (count === commandeGare.commandes.length) {
+          commandeGare.changeState(1, con);
+        }
+      }
+    }, 100);
+  });
+  commandesGaresStatesChecked = true;
+};
+
 var generateRandomCommands = function () {
-  //todo plusieurs types de bonbons par commande
   var interval = setInterval(function() {
     var data = [];
     getDataFinished = false;
@@ -179,7 +325,7 @@ var generateRandomCommands = function () {
         var sqlCommandeId = "INSERT INTO commandes_id(pays) VALUES(" + data["pays"][random(0, data.pays.length-1)].id + ");";
         con.query(sqlCommandeId, function(err, results) {
           if (err) throw err;
-          for (var i = 0; i < random(1, 5); i++) {
+          for (var i = 0; i < random(1, 3); i++) {
             var commande = new classes.Commande(
               data["bonbons"][random(0, data.bonbons.length-1)].id,
               data["couleurs"][random(0, data.couleurs.length-1)].id,

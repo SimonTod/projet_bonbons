@@ -10,7 +10,9 @@ module.exports = {
      - 1 : en cours de fabrication
      - 2 : en attente de conditionnement
      - 3 : en cours de conditionnement
-     - 4 : pret à l'envoi
+     - 4 : en gare
+     - 5 : en chargement dans carton (gare)
+     - 6 : en carton / pret à envoi
      */
     constructor(bonbon, couleur, variante, texture, contenant, quantite, id, etat) {
       this.id = id;
@@ -239,7 +241,7 @@ module.exports = {
     }
 
     addStock(commande, con) {
-      var checkStock = "SELECT * FROM stock_conditionnement " +
+      var checkStock = "SELECT * FROM gares " +
         "WHERE bonbon = " + commande.bonbon + " " +
         "AND couleur = " + commande.couleur + " " +
         "AND variante = " + commande.variante + " " +
@@ -247,21 +249,12 @@ module.exports = {
         "AND contenant = " + commande.contenant + ";";
       con.query(checkStock, function(err, results) {
         if (err) throw err;
-        if (results.length > 0) {
-          var newQuantite = results[0].quantite + commande.quantite;
-          var addToExistingStock = "UPDATE stock_conditionnement SET quantite = " + newQuantite + " WHERE id = " + results[0].id + ";";
-          con.query(addToExistingStock, function(err1, results1) {
-            if (err1) throw err1;
-            console.log("Stock de conditionnement de " + commande.bonbon+"/"+commande.couleur+"/"+commande.variante+"/"+commande.texture+"/"+commande.contenant + " modifié de " + results[0].quantite + " à " + newQuantite);
-          })
-        } else {
-          var createStock = "INSERT INTO stock_conditionnement(bonbon, couleur, variante, texture, contenant, quantite) " +
-            "VALUES(" + commande.bonbon + ", " + commande.couleur + ", " + commande.variante + ", " + commande.texture + ", " + commande.contenant + ", " + commande.quantite + ");";
-          con.query(createStock, function(err1, results1) {
-            if (err1) throw err1;
-            console.log("Nouveau stock de conditionnement de " + commande.bonbon+"/"+commande.couleur+"/"+commande.variante+"/"+commande.texture+"/"+commande.contenant + " créé avec " + commande.quantite + " de quantité")
-          })
-        }
+        var newQuantite = results[0].quantite + commande.quantite;
+        var addToExistingStock = "UPDATE gares SET quantite = " + newQuantite + " WHERE id = " + results[0].id + ";";
+        con.query(addToExistingStock, function(err1, results1) {
+          if (err1) throw err1;
+          console.log("Stock de gare de " + commande.bonbon+"/"+commande.couleur+"/"+commande.variante+"/"+commande.texture+"/"+commande.contenant + " modifié de " + results[0].quantite + " à " + newQuantite);
+        })
       });
     }
 
@@ -296,5 +289,220 @@ module.exports = {
       this.variante = variante;
       this.texture = texture;
     }
+  },
+
+  BonbonConditionnne: class {
+    constructor(bonbon, couleur, variante, texture, contenant) {
+      this.bonbon = bonbon;
+      this.couleur = couleur;
+      this.variante = variante;
+      this.texture = texture;
+      this.contenant = contenant;
+    }
+  },
+
+  Gare: class {
+    constructor(id, gare, bonbon, quantite) {
+      this.id = id;
+      this.gare = gare;
+      this.bonbon = bonbon; //BonbonConditionne
+      this.quantite = quantite;
+      this.cartons = 0;
+    }
+
+    checkCanReceiveCarton() {
+      return (this.cartons < 7);
+    }
+
+    removeQuantite(quantite, con) {
+      var myThis = this;
+      var checkStock = "SELECT * FROM gares " +
+        "WHERE bonbon = " + this.bonbon.bonbon + " " +
+        "AND couleur = " + this.bonbon.couleur + " " +
+        "AND variante = " + this.bonbon.variante + " " +
+        "AND texture = " + this.bonbon.texture + " " +
+        "AND contenant = " + this.bonbon.contenant + ";";
+      con.query(checkStock, function(err, results) {
+        if (err) throw err;
+        if (results.length !== 0) {
+          var newQuantite = results[0].quantite - quantite;
+          var removeFromExistingStock = "UPDATE gares SET quantite = " + newQuantite + " WHERE id = " + results[0].id + ";";
+          con.query(removeFromExistingStock, function(err1, results1) {
+            if (err1) throw err1;
+            console.log("Stock de " + myThis.bonbon.bonbon+"/"+myThis.bonbon.couleur+"/"+myThis.bonbon.variante+"/"+myThis.bonbon.texture+"/"+ myThis.bonbon.contenant + " modifié de " + results[0].quantite + " à " + newQuantite);
+          })
+        }
+      });
+    }
+  },
+
+  CommandeGares: class {
+    /*
+    etat
+    - 0 : en fabrication / conditionnement
+    - 1 : pret à etre cartonnées (en gare)
+    - 2 : en train d'etre cartonnées (en gare)
+    - 3 : cartonnés (pret pour expédition)
+    actions
+    - 0 : en attente
+    - 1 : en deplacement
+    - 2 : en gare
+     */
+    constructor(id, pays, etat, commandes) {
+      this.id = id;
+      this.pays = pays;
+      this.etat = etat;
+      this.commandes = commandes; //[]
+      this.action = 0;
+      this.gare = null;
+      this.cartons = [];
+    }
+
+    changeState(newState, con) {
+      this.etat = newState;
+      var sql = "UPDATE commandes_id SET etat = "+this.etat+" WHERE id = " + this.id + ";";
+      con.query(sql, function(err, results) {
+        if (err) throw err;
+      });
+    }
+
+    launchFill(gares, con) {
+      var myThis = this;
+      this.changeState(2, con);
+      this.commandes.forEach(function(commande) {
+        var sqlGetNeededCartons = "SELECT * FROM commandes, contenants WHERE commandes.contenant = contenants.id AND commandes.id = " + commande.id + ";";
+        con.query(sqlGetNeededCartons, function(err, results) {
+          if (err) throw err;
+          var neededCartons = Math.ceil(results[0].quantite / results[0].max_in_carton);
+          for (var i = 1; i < neededCartons + 1; i++) {
+            var carton = myThis.createCarton();
+            myThis.fill(carton, gares, commande, myThis.getQuantiteCarton(results[0].quantite, results[0].max_in_carton, i), con);
+          }
+        });
+
+      });
+
+      this.intervalCheckCompletedCommands = setInterval(function() {
+        myThis.checkCompletedCommands(con);
+      }, 10000);
+    }
+
+    fill(carton, gares, commande, quantite, con) {
+      var myThis = this;
+      var gare = myThis.findGare(gares, commande);
+      myThis.changeGare(gare, function() {
+        setTimeout(function() {
+          myThis.findGare(gares, commande).removeQuantite(quantite, con);
+          setTimeout(function() {
+            carton.quantite = quantite;
+            console.log("carton rempli");
+            myThis.action = 0;
+            myThis.addStockCarton(commande, quantite, con);
+          }, 17 * 60 * 1000 /*1000*/);
+        }, myThis.random(0, 1000));
+      });
+    }
+
+    findGare(gares, commande) {
+      var returnGare;
+      gares.forEach(function(gare) {
+        if (gare.bonbon.bonbon === commande.bonbon &&
+          gare.bonbon.couleur === commande.couleur &&
+          gare.bonbon.variante === commande.variante &&
+          gare.bonbon.texture === commande.texture &&
+          gare.bonbon.contenant === commande.contenant) {
+          returnGare = gare;
+        }
+      });
+      return returnGare;
+    }
+
+    changeGare(gare, functionAfter) {
+      if (this.gare !== gare) {
+        if (this.gare !== null)
+          this.gare.cartons--;
+        this.action = 1;
+        setTimeout(function() {
+          console.log("carton en déplacement");
+          this.gare = gare;
+          this.gare.cartons++;
+          this.action = 2;
+          functionAfter();
+        }, 8 * 60 * 1000 /*1000*/)
+      } else {
+        functionAfter();
+      }
+    }
+
+    addStockCarton(commande, quantite, con) {
+      var sql = "INSERT INTO stock_carton(commande_id, bonbon, couleur, texture, contenant, quantite) VALUES" +
+        "("+ commande.id +", "+ commande.bonbon +", "+ commande.couleur +", "+ commande.texture +", "+ commande.contenant +", "+ quantite +");"
+      con.query(sql, function(err, results) {
+        if (err) throw err;
+        console.log("nouveau stock de cartons pret à l'envoi");
+      })
+    }
+
+    checkCompletedCommands(con) {
+      var myThis = this;
+      var sqlGetCommands = "SELECT commandes.id, commandes.commande_id, commandes.quantite, contenants.max_in_carton FROM commandes, contenants WHERE commandes.contenant = contenants.id AND commande_id = " + this.id + ";";
+      con.query(sqlGetCommands, function(err, results) {
+        results.forEach(function(result) {
+          result.check = false;
+          var sqlGetCartons = "SELECT SUM(quantite) AS quantite FROM stock_carton WHERE commande_id = " + result.id + ";";
+          con.query(sqlGetCartons, function(err1, results1) {
+            if (result.quantite * result.max_in_carton <= results1[0].quantite) {
+              result.check = true;
+            }
+          })
+        });
+
+        setTimeout(function() {
+          var check = true;
+          results.forEach(function(result) {
+            if (result.check === false)
+              check = false;
+          });
+          setTimeout(function() {
+            if (check === true) {
+              myThis.changeState(3, con)
+            }
+          }, 1000);
+        }, 3000);
+      });
+    }
+
+    createCarton() {
+      return [];
+    }
+
+    getQuantiteCarton(totalContenant, contenantsParCarton, numeroCarton) {
+      var nbMaxCartons = Math.ceil(totalContenant / contenantsParCarton);
+      var reste = totalContenant % contenantsParCarton;
+      if ((numeroCarton === nbMaxCartons && reste === 0) || numeroCarton !== nbMaxCartons) {
+        return contenantsParCarton;
+      } else if (numeroCarton === nbMaxCartons && reste !== 0) {
+        return reste;
+      }
+    };
+
+    random(min, max) {
+      return Math.floor(Math.random() * ((max - min) + 1 ) + min);
+    };
+
+  },
+
+  Carton: class{
+    /*
+    state
+    - 0 : non occupé
+    - 1 : en déplacement
+    - 2 : en chargement / dans une gare
+     */
+    constructeur() {
+      this.state = 0;
+    }
+
+
   }
 };
