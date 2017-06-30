@@ -87,9 +87,9 @@ module.exports = {
                 myThis.state = 0;
               } else {
                 //vérifie si on a besoin de changer d'outils. Si oui, la machine prend le temps de changer d'outils
-                if (myThis.bonbon !== null && !(myThis.bonbon.bonbon === commande.bonbon && myThis.bonbon.variante === commande.variante)) {
+                if (myThis.bonbon === null || (myThis.bonbon !== null && !(myThis.bonbon.bonbon === commande.bonbon && myThis.bonbon.variante === commande.variante))) {
                   myThis.state = 2;
-                  console.log("machine " + myThis.id + " change d'outils");
+                  console.log("machine de fabrication" + myThis.id + " change d'outils");
                   setTimeout(function() {
                     myThis.state = 3;
                   }, getDelai(commande.variante) /*5000*/);
@@ -101,7 +101,7 @@ module.exports = {
                   if (myThis.state = 3) {
                     clearInterval(intervalCheckDelaiFinished);
                     myThis.state = 1;
-                    console.log("machine " + myThis.id + " commence la production");
+                    console.log("machine de fabrication " + myThis.id + " commence la production");
 
                     setTimeout(function() {
                       myThis.addStock(commande, con, myThis.getCadence(commande.variante));
@@ -159,6 +159,133 @@ module.exports = {
           return this.cadences[i];
         }
       }
+    }
+  },
+
+  MachineConditionnement: class {
+    /*
+     machine state :
+     - 0 : à l'arret
+     - 1 : en marche
+     - 2 : changement d'outil
+     - 3 : outil changé / machine prete
+     */
+    constructor(id, contenant, cadence, delaiChangeOutil, state, bonbon) {
+      this.id = id;
+      this.contenant = contenant;
+      this.cadence = cadence;
+      this.delaiChangeOutil = delaiChangeOutil;
+      this.state = state;
+      this.bonbon = bonbon;
+    }
+
+    checkIsFree() {
+      if (this.state === 0)
+        return true;
+    }
+
+    launchConditionnement(commande, con) {
+      commande.changeState(3, con);
+      var myThis = this;
+      var quantite;
+
+      var sqlQuantiteCommande = "SELECT * FROM commandes WHERE id = " + commande.id + ";";
+      con.query(sqlQuantiteCommande, function(err, results) {
+        if (err) throw err;
+        if (results.length !== 0) {
+          var sqlGetStock = "SELECT * FROM stock_bonbons " +
+            "WHERE bonbon = " + commande.bonbon + " " +
+            "AND couleur = " + commande.couleur + " " +
+            "AND variante = " + commande.variante + " " +
+            "AND texture = " + commande.texture + ";";
+          con.query(sqlGetStock, function(err1, results1) {
+            if (err1) throw err1;
+            var sqlGetContenant = "SELECT * FROM contenants WHERE id = " + results[0].contenant + ";";
+            con.query(sqlGetContenant, function(err2, results2) {
+              if (err2) throw err2;
+              quantite = results[0].quantite * results2[0].max_bonbons;
+              if ((quantite) <= results1[0].quantite) {
+                myThis.removeFromStockBonbons(commande, con, quantite);
+
+                //vérifie si on a besoin de changer d'outils. Si oui, la machine prend le temps de changer d'outils
+                if (myThis.bonbon === null || (myThis.bonbon !== null && !(myThis.bonbon.bonbon === commande.bonbon && myThis.bonbon.variante === commande.variante))) {
+                  myThis.state = 2;
+                  console.log("machine de conditionnement " + myThis.id + " change d'outils");
+                  setTimeout(function() {
+                    myThis.state = 3;
+                  }, myThis.delaiChangeOutil /*5000*/);
+                } else {
+                  myThis.state = 3;
+                }
+
+                var intervalCheckDelaiFinished = setInterval(function() {
+                  if (myThis.state = 3) {
+                    clearInterval(intervalCheckDelaiFinished);
+                    myThis.state = 1;
+                    console.log("machine de conditionnement " + myThis.id + " commence la conditionnement");
+
+                    setTimeout(function() {
+                      myThis.addStock(commande, con);
+                      myThis.state = 0;
+                      commande.changeState(4, con);
+                    }, myThis.calculTime(quantite) /*5000*/);
+                  }
+                }, 100)
+              }
+            });
+          });
+        }
+      });
+    }
+
+    addStock(commande, con) {
+      var checkStock = "SELECT * FROM stock_conditionnement " +
+        "WHERE bonbon = " + commande.bonbon + " " +
+        "AND couleur = " + commande.couleur + " " +
+        "AND variante = " + commande.variante + " " +
+        "AND texture = " + commande.texture + " " +
+        "AND contenant = " + commande.contenant + ";";
+      con.query(checkStock, function(err, results) {
+        if (err) throw err;
+        if (results.length > 0) {
+          var newQuantite = results[0].quantite + commande.quantite;
+          var addToExistingStock = "UPDATE stock_conditionnement SET quantite = " + newQuantite + " WHERE id = " + results[0].id + ";";
+          con.query(addToExistingStock, function(err1, results1) {
+            if (err1) throw err1;
+            console.log("Stock de conditionnement de " + commande.bonbon+"/"+commande.couleur+"/"+commande.variante+"/"+commande.texture+"/"+commande.contenant + " modifié de " + results[0].quantite + " à " + newQuantite);
+          })
+        } else {
+          var createStock = "INSERT INTO stock_conditionnement(bonbon, couleur, variante, texture, contenant, quantite) " +
+            "VALUES(" + commande.bonbon + ", " + commande.couleur + ", " + commande.variante + ", " + commande.texture + ", " + commande.contenant + ", " + commande.quantite + ");";
+          con.query(createStock, function(err1, results1) {
+            if (err1) throw err1;
+            console.log("Nouveau stock de conditionnement de " + commande.bonbon+"/"+commande.couleur+"/"+commande.variante+"/"+commande.texture+"/"+commande.contenant + " créé avec " + commande.quantite + " de quantité")
+          })
+        }
+      });
+    }
+
+    calculTime(quantite) {
+      return ((quantite * 60*60*1000) / this.cadence);
+    }
+
+    removeFromStockBonbons(commande, con, quantite) {
+      var checkStock = "SELECT * FROM stock_bonbons " +
+        "WHERE bonbon = " + commande.bonbon + " " +
+        "AND couleur = " + commande.couleur + " " +
+        "AND variante = " + commande.variante + " " +
+        "AND texture = " + commande.texture + ";";
+      con.query(checkStock, function(err, results) {
+        if (err) throw err;
+        if (results.length !== 0) {
+          var newQuantite = results[0].quantite - quantite;
+          var removeFromExistingStock = "UPDATE stock_bonbons SET quantite = " + newQuantite + " WHERE id = " + results[0].id + ";";
+          con.query(removeFromExistingStock, function(err1, results1) {
+            if (err1) throw err1;
+            console.log("Stock de " + commande.bonbon+"/"+commande.couleur+"/"+commande.variante+"/"+commande.texture + " modifié de " + results[0].quantite + " à " + newQuantite);
+          })
+        }
+      });
     }
   },
 

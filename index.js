@@ -10,8 +10,11 @@ var getDataFinished = false;
 var machinesFabrication = [];
 var machinesFabricationInitialized = false;
 
-var commandesAFabriquer = [];
-var commandesAFabriquerInitialized = false;
+var machinesConditionnement = [];
+var machinesConditionnementInitialized = false;
+
+var commandes = [];
+var commandesInitialized = false;
 
 var con = mysql.createConnection({
   host: "localhost",
@@ -23,17 +26,22 @@ var con = mysql.createConnection({
 con.connect(function(err) {
   if (err) throw err;
   console.log("connected");
-  generageRandomCommands();
+  generateRandomCommands();
   initMachinesFabrication();
+  initMachinesConditionnement();
   var intervalGetCommands = setInterval(function() {
     getCommands();
   }, 10000);
-  var intervalRunFabrib = setInterval(function() {
-    if (machinesFabricationInitialized === true && commandesAFabriquerInitialized === true) {
+  var intervalRun = setInterval(function() {
+    if (machinesFabricationInitialized === true && commandesInitialized === true && machinesConditionnementInitialized === true) {
       var intervalRunFabrication = setInterval(function() {
         runFabrication();
       }, 1000);
-      clearInterval(intervalRunFabrib);
+      var intervalRunConditionnement = setInterval(function() {
+        runConditionnement();
+      }, 1000);
+
+      clearInterval(intervalRun);
     }
   }, 100);
 });
@@ -78,32 +86,70 @@ var initMachinesFabrication = function() {
   }
 };
 
+var initMachinesConditionnement = function() {
+  var sql = "SELECT * FROM conditionnement;";
+  con.query(sql, function(err, results) {
+    if (err) throw err;
+    results.forEach(function(result) {
+      var machine;
+      if (!checkMachineExists(machinesConditionnement, result.machine)) {
+        machine = new classes.MachineConditionnement(result.machine, result.contenant, result.cadence, result.delai_change_outils, 0, null);
+        machinesConditionnement.push(machine);
+      }
+    });
+    machinesConditionnementInitialized = true;
+  });
+
+  var checkMachineExists = function (machines, machineId) {
+    var check = false;
+    machines.forEach(function(machine) {
+      if (machine.id == machineId) {
+        check = true;
+      }
+    });
+    return check;
+  };
+};
+
 var runFabrication = function() {
   machinesFabrication.forEach(function(machine) {
     if (machine.state === 0) {
-      commandesAFabriquer.forEach(function(commande) {
+      commandes.forEach(function(commande) {
         if (machine.checkIsFree() && machine.checkHasVariante(commande.variante) && commande.etat === 0) {
           console.log("machine " + machine.id + " starts working on command " + commande.id);
           machine.launchProduction(commande, con);
         }
-      })
+      });
     }
-  })
+  });
+};
+
+var runConditionnement = function() {
+  machinesConditionnement.forEach(function(machine) {
+    if (machine.state === 0) {
+      commandes.forEach(function(commande) {
+        if (machine.checkIsFree() && machine.contenant === commande.contenant && commande.etat === 2) {
+          console.log("machine " + machine.id + "start conditioning command " + commande.id);
+          machine.launchConditionnement(commande, con);
+        }
+      });
+    }
+  });
 };
 
 var getCommands = function() {
-  commandesAFabriquerInitialized = false;
-  var sql = "SELECT * FROM commandes WHERE etat = 0;";
+  commandesInitialized = false;
+  var sql = "SELECT * FROM commandes;";
   con.query(sql, function(err, results) {
     if (err) throw err;
     results.forEach(function(result) {
       var commande;
-      if (!checkCommandeExists(commandesAFabriquer, result.id)) {
-        commande = new classes.Commande(result.bonbon, result.couleur, result.variante, result.texture, result.contenant, result.quantite, result.pays, result.id, result.etat)
-        commandesAFabriquer.push(commande);
+      if (!checkCommandeExists(commandes, result.id)) {
+        commande = new classes.Commande(result.bonbon, result.couleur, result.variante, result.texture, result.contenant, result.quantite, result.pays, result.id, result.etat);
+        commandes.push(commande);
       }
     });
-    commandesAFabriquerInitialized = true;
+    commandesInitialized = true;
   });
 
   var checkCommandeExists = function (commandes, commandeId) {
@@ -117,7 +163,7 @@ var getCommands = function() {
   };
 };
 
-var generageRandomCommands = function () {
+var generateRandomCommands = function () {
   var interval = setInterval(function() {
     var data = [];
     getDataFinished = false;
