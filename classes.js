@@ -12,7 +12,7 @@ module.exports = {
      - 3 : en cours de conditionnement
      - 4 : pret à l'envoi
      */
-    constructor(bonbon, couleur, variante, texture, contenant, quantite, pays, id, etat) {
+    constructor(bonbon, couleur, variante, texture, contenant, quantite, id, etat) {
       this.id = id;
       this.bonbon = bonbon;
       this.couleur = couleur;
@@ -20,7 +20,6 @@ module.exports = {
       this.texture = texture;
       this.contenant = contenant;
       this.quantite = quantite;
-      this.pays = pays;
       this.etat = etat;
     }
 
@@ -64,6 +63,7 @@ module.exports = {
       return check;
     }
 
+    //todo optimiser production
     launchProduction(commande, con) {
       commande.changeState(1, con);
       var myThis = this;
@@ -92,7 +92,7 @@ module.exports = {
                   console.log("machine de fabrication " + myThis.id + " change d'outils pendant " + myThis.getDelai(commande.variante) + "ms");
                   setTimeout(function() {
                     myThis.state = 3;
-                  }, myThis.getDelai(commande.variante) /*5000*/);
+                  }, /*myThis.getDelai(commande.variante)*/ 5000);
                 } else {
                   myThis.state = 3;
                 }
@@ -106,7 +106,7 @@ module.exports = {
                     setTimeout(function() {
                       myThis.addStock(commande, con, myThis.getCadence(commande.variante));
                       myThis.launchProduction(commande, con);
-                    }, 60 * 60 * 1000 /*5000*/);
+                    }, /*60 * 60 * 1000*/ 5000);
                   }
                 }, 100)
               }
@@ -213,7 +213,7 @@ module.exports = {
                   console.log("machine de conditionnement " + myThis.id + " change d'outils pendant " + myThis.delaiChangeOutil + "ms");
                   setTimeout(function() {
                     myThis.state = 3;
-                  }, myThis.delaiChangeOutil /*5000*/);
+                  }, /*myThis.delaiChangeOutil*/ 5000);
                 } else {
                   myThis.state = 3;
                 }
@@ -228,7 +228,7 @@ module.exports = {
                       myThis.addStock(commande, con);
                       myThis.state = 0;
                       commande.changeState(4, con);
-                    }, myThis.calculTime(quantite) /*5000*/);
+                    }, /*myThis.calculTime(quantite)*/ 5000);
                   }
                 }, 100)
               }

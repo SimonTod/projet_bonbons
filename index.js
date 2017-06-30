@@ -149,7 +149,7 @@ var getCommands = function() {
     results.forEach(function(result) {
       var commande;
       if (!checkCommandeExists(commandes, result.id)) {
-        commande = new classes.Commande(result.bonbon, result.couleur, result.variante, result.texture, result.contenant, result.quantite, result.pays, result.id, result.etat);
+        commande = new classes.Commande(result.bonbon, result.couleur, result.variante, result.texture, result.contenant, result.quantite, result.id, result.etat);
         commandes.push(commande);
       }
     });
@@ -168,6 +168,7 @@ var getCommands = function() {
 };
 
 var generateRandomCommands = function () {
+  //todo plusieurs types de bonbons par commande
   var interval = setInterval(function() {
     var data = [];
     getDataFinished = false;
@@ -175,20 +176,25 @@ var generateRandomCommands = function () {
 
     var interval2 = setInterval(function() {
       if (getDataFinished) {
-        var commande = new classes.Commande(
-          data["bonbons"][random(0, data.bonbons.length-1)].id,
-          data["couleurs"][random(0, data.couleurs.length-1)].id,
-          data["variantes"][random(0, data.variantes.length-1)].id,
-          data["textures"][random(0, data.textures.length-1)].id,
-          data["contenants"][random(0, data.contenants.length-1)].id,
-          random(1, 50),
-          data["pays"][random(0, data.pays.length-1)].id
-        );
-        sendNewCommande(commande);
+        var sqlCommandeId = "INSERT INTO commandes_id(pays) VALUES(" + data["pays"][random(0, data.pays.length-1)].id + ");";
+        con.query(sqlCommandeId, function(err, results) {
+          if (err) throw err;
+          for (var i = 0; i < random(1, 5); i++) {
+            var commande = new classes.Commande(
+              data["bonbons"][random(0, data.bonbons.length-1)].id,
+              data["couleurs"][random(0, data.couleurs.length-1)].id,
+              data["variantes"][random(0, data.variantes.length-1)].id,
+              data["textures"][random(0, data.textures.length-1)].id,
+              data["contenants"][random(0, data.contenants.length-1)].id,
+              random(1, 50)
+            );
+            sendNewCommande(commande, results.insertId);
+          }
+        });
         clearInterval(interval2);
       }
     }, 100);
-  }, random(300000, 1800000) /*5000*/); //random entre 5 et 30 minutes (1800000 = 30min & 300000 = 5min)
+  }, /*random(300000, 1800000)*/ 5000); //random entre 5 et 30 minutes (1800000 = 30min & 300000 = 5min)
 };
 
 var getServerData = function(data) {
@@ -256,9 +262,9 @@ var getServerData = function(data) {
   }, 100);
 };
 
-var sendNewCommande = function(commande) {
-  var sql = "INSERT INTO commandes(bonbon, couleur, variante, texture, contenant, quantite, pays)" +
-    "VALUES ("+commande.bonbon+", "+commande.couleur+", "+commande.variante+", "+commande.texture+", "+commande.contenant+", "+commande.quantite+", "+commande.pays+");"
+var sendNewCommande = function(commande, commandeId) {
+  var sql = "INSERT INTO commandes(commande_id, bonbon, couleur, variante, texture, contenant, quantite)" +
+    "VALUES ("+ commandeId + ", " +commande.bonbon+", "+commande.couleur+", "+commande.variante+", "+commande.texture+", "+commande.contenant+", "+commande.quantite+");";
   con.query(sql, function(err, result) {
     if (err) throw err;
   });
