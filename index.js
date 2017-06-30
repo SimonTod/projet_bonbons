@@ -199,10 +199,16 @@ var getServerData = function(data) {
   var selectTextures = "SELECT * FROM textures;";
   var selectContenants = "SELECT * FROM contenants;";
   var selectPays = "SELECT * FROM pays;";
-  con.query(selectBonbons, function(err, result) {
+  con.query(selectBonbons, function(err, results) {
     if (err) throw err;
     // console.log("Result: " + result[0]["bonbon"]);
-    data["bonbons"] = result;
+    // data["bonbons"] = results;
+    data["bonbons"] = [];
+    results.forEach(function(result) {
+      for (var i = 0; i < result.coef; i++) {
+        data["bonbons"].push(result);
+      }
+    });
     count+=1;
   });
   con.query(selectCouleurs, function(err, result) {
@@ -229,10 +235,16 @@ var getServerData = function(data) {
     data["contenants"] = result;
     count+=1;
   });
-  con.query(selectPays, function(err, result) {
+  con.query(selectPays, function(err, results) {
     if (err) throw err;
     // console.log("Result: " + result[0]["pays"]);
-    data["pays"] = result;
+    // data["pays"] = result;
+    data["pays"] = [];
+    results.forEach(function(result) {
+      for (var i = 0; i < result.coef; i++) {
+        data["pays"].push(result);
+      }
+    });
     count+=1;
   });
 
