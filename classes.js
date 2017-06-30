@@ -89,7 +89,7 @@ module.exports = {
                 //vérifie si on a besoin de changer d'outils. Si oui, la machine prend le temps de changer d'outils
                 if (myThis.bonbon === null || (myThis.bonbon !== null && !(myThis.bonbon.bonbon === commande.bonbon && myThis.bonbon.variante === commande.variante))) {
                   myThis.state = 2;
-                  console.log("machine de fabrication" + myThis.id + " change d'outils");
+                  console.log("machine de fabrication " + myThis.id + " change d'outils pendant " + myThis.getDelai(commande.variante) + "ms");
                   setTimeout(function() {
                     myThis.state = 3;
                   }, myThis.getDelai(commande.variante) /*5000*/);
@@ -98,10 +98,10 @@ module.exports = {
                 }
 
                 var intervalCheckDelaiFinished = setInterval(function() {
-                  if (myThis.state = 3) {
+                  if (myThis.state === 3) {
                     clearInterval(intervalCheckDelaiFinished);
                     myThis.state = 1;
-                    console.log("machine de fabrication " + myThis.id + " commence la production");
+                    console.log("machine de fabrication " + myThis.id + " commence la production de la commande " + commande.id);
 
                     setTimeout(function() {
                       myThis.addStock(commande, con, myThis.getCadence(commande.variante));
@@ -210,7 +210,7 @@ module.exports = {
                 //vérifie si on a besoin de changer d'outils. Si oui, la machine prend le temps de changer d'outils
                 if (myThis.bonbon === null || (myThis.bonbon !== null && !(myThis.bonbon.bonbon === commande.bonbon && myThis.bonbon.variante === commande.variante))) {
                   myThis.state = 2;
-                  console.log("machine de conditionnement " + myThis.id + " change d'outils");
+                  console.log("machine de conditionnement " + myThis.id + " change d'outils pendant " + myThis.delaiChangeOutil + "ms");
                   setTimeout(function() {
                     myThis.state = 3;
                   }, myThis.delaiChangeOutil /*5000*/);
@@ -219,7 +219,7 @@ module.exports = {
                 }
 
                 var intervalCheckDelaiFinished = setInterval(function() {
-                  if (myThis.state = 3) {
+                  if (myThis.state === 3) {
                     clearInterval(intervalCheckDelaiFinished);
                     myThis.state = 1;
                     console.log("machine de conditionnement " + myThis.id + " commence la conditionnement");

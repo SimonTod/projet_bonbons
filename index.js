@@ -115,10 +115,12 @@ var runFabrication = function() {
   machinesFabrication.forEach(function(machine) {
     if (machine.state === 0) {
       commandes.forEach(function(commande) {
-        if (machine.checkIsFree() && machine.checkHasVariante(commande.variante) && commande.etat === 0) {
-          console.log("machine " + machine.id + " starts working on command " + commande.id);
-          machine.launchProduction(commande, con);
-        }
+        setTimeout(function() {
+          if (machine.checkIsFree() && machine.checkHasVariante(commande.variante) && commande.etat === 0) {
+            console.log("machine " + machine.id + " starts working on command " + commande.id);
+            machine.launchProduction(commande, con);
+          }
+        }, random(0, 1000));
       });
     }
   });
@@ -128,10 +130,12 @@ var runConditionnement = function() {
   machinesConditionnement.forEach(function(machine) {
     if (machine.state === 0) {
       commandes.forEach(function(commande) {
-        if (machine.checkIsFree() && machine.contenant === commande.contenant && commande.etat === 2) {
-          console.log("machine " + machine.id + "start conditioning command " + commande.id);
-          machine.launchConditionnement(commande, con);
-        }
+        setTimeout(function(){
+          if (machine.checkIsFree() && machine.contenant === commande.contenant && commande.etat === 2) {
+            console.log("machine " + machine.id + "start conditioning command " + commande.id);
+            machine.launchConditionnement(commande, con);
+          }
+        }, random(0, 1000));
       });
     }
   });
