@@ -92,7 +92,7 @@ module.exports = {
                   console.log("machine de fabrication" + myThis.id + " change d'outils");
                   setTimeout(function() {
                     myThis.state = 3;
-                  }, getDelai(commande.variante) /*5000*/);
+                  }, myThis.getDelai(commande.variante) /*5000*/);
                 } else {
                   myThis.state = 3;
                 }
