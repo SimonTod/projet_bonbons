@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="9c1f4979-998c-4cc5-91ff-a4df25025470" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/classes.js" afterPath="$PROJECT_DIR$/classes.js" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/index.js" afterPath="$PROJECT_DIR$/index.js" />
     </list>
@@ -29,11 +28,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="index.js" pinned="false" current-in-tab="true">
+      <file leaf-file-name="index.js" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/index.js">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="535">
-              <caret line="196" column="62" lean-forward="false" selection-start-line="196" selection-start-column="62" selection-end-line="196" selection-end-column="62" />
+              <caret line="196" column="5" lean-forward="false" selection-start-line="196" selection-start-column="5" selection-end-line="196" selection-end-column="5" />
               <folding>
                 <element signature="e#0#40#0" expanded="false" />
                 <element signature="e#1237#2370#0" expanded="false" />
@@ -51,11 +50,11 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="classes.js" pinned="false" current-in-tab="false">
+      <file leaf-file-name="classes.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/classes.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="3078">
-              <caret line="230" column="59" lean-forward="false" selection-start-line="230" selection-start-column="59" selection-end-line="230" selection-end-column="59" />
+            <state relative-caret-position="342">
+              <caret line="94" column="64" lean-forward="false" selection-start-line="94" selection-start-column="64" selection-end-line="94" selection-end-column="64" />
               <folding>
                 <element signature="e#0#40#0" expanded="false" />
                 <element signature="e#649#857#0" expanded="false" />
@@ -107,8 +106,8 @@
       <list>
         <option value="$PROJECT_DIR$/package.json" />
         <option value="$PROJECT_DIR$/bdd.js" />
-        <option value="$PROJECT_DIR$/classes.js" />
         <option value="$PROJECT_DIR$/index.js" />
+        <option value="$PROJECT_DIR$/classes.js" />
       </list>
     </option>
   </component>
@@ -261,12 +260,12 @@
       <workItem from="1498718121856" duration="23522000" />
       <workItem from="1498746907023" duration="623000" />
       <workItem from="1498747849166" duration="978000" />
-      <workItem from="1498804735808" duration="19311000" />
+      <workItem from="1498804735808" duration="19679000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="51828000" />
+    <option name="totallyTimeSpent" value="52196000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -308,38 +307,6 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/index.js</url>
-          <line>196</line>
-          <properties />
-          <option name="timeStamp" value="16" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/classes.js</url>
-          <line>108</line>
-          <properties />
-          <option name="timeStamp" value="17" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/classes.js</url>
-          <line>94</line>
-          <properties />
-          <option name="timeStamp" value="18" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/classes.js</url>
-          <line>230</line>
-          <properties />
-          <option name="timeStamp" value="19" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="javascript">
-          <url>file://$PROJECT_DIR$/classes.js</url>
-          <line>215</line>
-          <properties />
-          <option name="timeStamp" value="21" />
-        </line-breakpoint>
-      </breakpoints>
       <option name="time" value="22" />
     </breakpoint-manager>
     <watches-manager />
@@ -533,30 +500,10 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/bdd.js" />
-    <entry file="file://$PROJECT_DIR$/classes.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="3078">
-          <caret line="230" column="59" lean-forward="false" selection-start-line="230" selection-start-column="59" selection-end-line="230" selection-end-column="59" />
-          <folding>
-            <element signature="e#0#40#0" expanded="false" />
-            <element signature="e#649#857#0" expanded="false" />
-            <element signature="e#1342#1398#0" expanded="false" />
-            <element signature="e#1431#1610#0" expanded="false" />
-            <element signature="e#4205#4439#0" expanded="false" />
-            <element signature="e#4479#5913#0" expanded="false" />
-            <element signature="e#5940#6101#0" expanded="false" />
-            <element signature="e#6576#6632#0" expanded="false" />
-            <element signature="e#9162#10827#0" expanded="false" />
-            <element signature="e#10854#10916#0" expanded="false" />
-            <element signature="e#10970#11872#0" expanded="false" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/index.js">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="535">
-          <caret line="196" column="62" lean-forward="false" selection-start-line="196" selection-start-column="62" selection-end-line="196" selection-end-column="62" />
+          <caret line="196" column="5" lean-forward="false" selection-start-line="196" selection-start-column="5" selection-end-line="196" selection-end-column="5" />
           <folding>
             <element signature="e#0#40#0" expanded="false" />
             <element signature="e#1237#2370#0" expanded="false" />
@@ -569,6 +516,26 @@
             <element signature="e#4790#4956#0" expanded="false" />
             <element signature="e#6235#8115#0" expanded="false" />
             <element signature="e#8559#8625#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/classes.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="342">
+          <caret line="94" column="64" lean-forward="false" selection-start-line="94" selection-start-column="64" selection-end-line="94" selection-end-column="64" />
+          <folding>
+            <element signature="e#0#40#0" expanded="false" />
+            <element signature="e#649#857#0" expanded="false" />
+            <element signature="e#1342#1398#0" expanded="false" />
+            <element signature="e#1431#1610#0" expanded="false" />
+            <element signature="e#4205#4439#0" expanded="false" />
+            <element signature="e#4479#5913#0" expanded="false" />
+            <element signature="e#5940#6101#0" expanded="false" />
+            <element signature="e#6576#6632#0" expanded="false" />
+            <element signature="e#9162#10827#0" expanded="false" />
+            <element signature="e#10854#10916#0" expanded="false" />
+            <element signature="e#10970#11872#0" expanded="false" />
           </folding>
         </state>
       </provider>
