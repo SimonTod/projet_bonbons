@@ -340,7 +340,7 @@ var generateRandomCommands = function () {
         clearInterval(interval2);
       }
     }, 100);
-  }, random(300000, 1800000) /*5000*/); //random entre 5 et 30 minutes (1800000 = 30min & 300000 = 5min)
+  }, /*random(300000, 1800000)*/ 5000); //random entre 5 et 30 minutes (1800000 = 30min & 300000 = 5min)
 };
 
 var getServerData = function(data) {

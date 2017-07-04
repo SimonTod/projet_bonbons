@@ -94,7 +94,7 @@ module.exports = {
                   console.log("machine de fabrication " + myThis.id + " change d'outils pendant " + myThis.getDelai(commande.variante) + "ms");
                   setTimeout(function() {
                     myThis.state = 3;
-                  }, myThis.getDelai(commande.variante) /*5000*/);
+                  }, /*myThis.getDelai(commande.variante)*/ 5000);
                 } else {
                   myThis.state = 3;
                 }
@@ -108,7 +108,7 @@ module.exports = {
                     setTimeout(function() {
                       myThis.addStock(commande, con, myThis.getCadence(commande.variante));
                       myThis.launchProduction(commande, con);
-                    }, 60 * 60 * 1000 /*5000*/);
+                    }, /*60 * 60 * 1000*/ 5000);
                   }
                 }, 100)
               }
@@ -215,7 +215,7 @@ module.exports = {
                   console.log("machine de conditionnement " + myThis.id + " change d'outils pendant " + myThis.delaiChangeOutil + "ms");
                   setTimeout(function() {
                     myThis.state = 3;
-                  }, myThis.delaiChangeOutil /*5000*/);
+                  }, /*myThis.delaiChangeOutil*/ 5000);
                 } else {
                   myThis.state = 3;
                 }
@@ -230,7 +230,7 @@ module.exports = {
                       myThis.addStock(commande, con);
                       myThis.state = 0;
                       commande.changeState(4, con);
-                    }, myThis.calculTime(quantite) /*5000*/);
+                    }, /*myThis.calculTime(quantite)*/ 5000);
                   }
                 }, 100)
               }
@@ -398,7 +398,7 @@ module.exports = {
             console.log("carton rempli");
             myThis.action = 0;
             myThis.addStockCarton(commande, quantite, con);
-          }, 17 * 60 * 1000 /*1000*/);
+          }, /*17 * 60 * 1000*/ 1000);
         }, myThis.random(0, 1000));
       });
     }
@@ -428,7 +428,7 @@ module.exports = {
           this.gare.cartons++;
           this.action = 2;
           functionAfter();
-        }, 8 * 60 * 1000 /*1000*/)
+        }, /*8 * 60 * 1000*/ 1000)
       } else {
         functionAfter();
       }
